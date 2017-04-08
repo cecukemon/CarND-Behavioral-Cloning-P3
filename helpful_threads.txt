@@ -1,0 +1,8 @@
+https://discussions.udacity.com/t/still-having-some-issues-with-project-behavioral-cloning-any-advice/234354/16
+https://discussions.udacity.com/t/car-hugs-the-side-line/230703/11
+https://discussions.udacity.com/t/model-not-able-to-learn-some-portions-of-the-track/234995/2
+https://discussions.udacity.com/t/behavioral-cloning-non-spoiler-hints/233194
+https://discussions.udacity.com/t/frustrated-trying-to-tune-a-pure-nvidia-model/228759
+https://images.nvidia.com/content/tegra/automotive/images/2016/solutions/pdf/end-to-end-dl-using-px.pdf
+http://neuralnetworksanddeeplearning.com/chap1.html
+https://adeshpande3.github.io/adeshpande3.github.io/A-Beginner's-Guide-To-Understanding-Convolutional-Neural-Networks-Part-2/
