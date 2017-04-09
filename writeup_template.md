@@ -117,9 +117,6 @@ Some pictures from a recovery (driving from left side of the road back to the mi
 ![recovery mid][recovery_2]
 ![recovery almost there!][recovery_3]
 
-
-After the collection process, I had X number of data points. I then preprocessed this data by ...
-
 Image augmentation described in "Model Architecture and Training Strategy"
 
 I finally randomly shuffled the data set and put 20% of the data into a validation set. 
