@@ -42,29 +42,32 @@ import ppc
 # lines from the driving log CSV file:
 lines = []
 
-path = "../windows_sim/"
-folders = ["record_lap1", "record_lap2", "record_recovery", "record_problems"]
+#path = "../windows_sim/"
+folders = ["../data/"]
+
+skip_one = 0
 
 for folder in folders:
   print(folder)
   
   # Read the CSV driving logfiles
-  f = open(path + folder + '/driving_log.csv')
+  f = open(folder + '/driving_log.csv')
   with f as csvfile:
     reader = csv.reader(csvfile)
     for line in reader:
 
+      # skip header line
+      if skip_one == 0:
+        skip_one = 1
+        continue
+
       # eliminate 70% of steering values too close to 0 in order to reduce bias
       if random.randrange(10) < 7:
-        if abs(lines[3]) < min_steering_angle:
+        if abs(float(line[3])) < min_steering_angle:
           continue
 
       lines.append(line)
   f.close()
-
-  # remove header row
-  # center,left,right,steering
-  del lines[0]  
 
   print("read " + str(len(lines)) + " lines from driving log")
 
@@ -79,7 +82,7 @@ if useable == 0:
 
 def generator(data):
   while 1:
-    for i in range(0, len(data), batch_size)
+    for i in range(0, len(data), batch_size):
       batch_samples = data[offset : offset + batch_size]
       images = []
       measurements = []
@@ -109,7 +112,7 @@ def augment_data(line):
   source_path = line[camera]
   filename = source_path.split('\\')[-1]
 
-  image = cv2.imread(path + folder + '/IMG/' + filename)
+  image = cv2.imread(folder + '/IMG/' + filename)
 
   # randomly flip images to reduce left steering bias
   # an alternative would be driving the track backwards, but this way
@@ -176,7 +179,7 @@ train_samples, validation_samples = train_test_split(lines, test_size=0.2)
 
 
 train_generator = generator(train_samples)
-validation_generator = generator(validation_sample)
+validation_generator = generator(validation_samples)
 
 
 # It should typically be equal to the number of unique samples if your dataset divided by the batch size.
