@@ -197,4 +197,3 @@ model.fit_generator(train_generator, steps_per_epoch, epochs=num_epochs, \
 
 
 model.save('model.h5')
-
