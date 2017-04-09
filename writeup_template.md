@@ -14,13 +14,10 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[image1]: ./examples/placeholder.png "Model Visualization"
-[image2]: ./examples/placeholder.png "Grayscaling"
-[image3]: ./examples/placeholder_small.png "Recovery Image"
-[image4]: ./examples/placeholder_small.png "Recovery Image"
-[image5]: ./examples/placeholder_small.png "Recovery Image"
-[image6]: ./examples/placeholder_small.png "Normal Image"
-[image7]: ./examples/placeholder_small.png "Flipped Image"
+[mid]: ./examples/mid.jpg
+[recovery_1]: ./examples/recovery_1.jpg
+[recovery_2]: ./examples/recovery_2.jpg
+[recovery_3]: ./examples/recovery_3.jpg
 
 ## Rubric Points
 
@@ -33,7 +30,8 @@ My project includes the following files:
 * model.py containing the script to create and train the model
 * drive.py for driving the car in autonomous mode
 * model.h5 containing a trained convolution neural network 
-* writeup_report.md or writeup_report.pdf summarizing the results
+* video.mp4 with a video of a successful lap
+* writeup_report.md summarizing the results
 
 ####2. Submission includes functional code
 Using the Udacity provided simulator and my drive.py file, the car can be driven autonomously around the track by executing 
@@ -94,40 +92,36 @@ These changes improved the driving behavior some, but at this point I still had 
 I then rewrote the code to use generators for feeding the model, with a batch size of 32 images, and doing the augmentation on random images per batch. This ensures better training, as the model gets a more random set of images in every epoch.
 
 For augmentation, I did the following:
+- randomly flip image (and measurement)
+- randomly adjust the brightness (per pixel)
 - gaussian blur
-- 
-
+- change color space from RGB to YUV
+- crop the top 75 and bottom 20px of the image (this happens in the Keras model)
 
 At the end of the process, the vehicle is able to drive autonomously around the track without leaving the road.
 
 ####2. Final Model Architecture
 
-As described in the first part of "Model Architecture and Training Strategy"
+As described in "1. An appropriate model architecture has been employed"
 
 ####3. Creation of the Training Set & Training Process
 
-To capture good driving behavior, I first recorded two laps on track one using center lane driving. Here is an example image of center lane driving:
+Center lane driving to capture good behavior:
 
-![alt text][image2]
+![center lane driving][mid]
 
-I then recorded the vehicle recovering from the left side and right sides of the road back to center so that the vehicle would learn to .... These images show what a recovery looks like starting from ... :
+Some pictures from a recovery (driving from left side of the road back to the middle)
 
-![alt text][image3]
-![alt text][image4]
-![alt text][image5]
 
-Then I repeated this process on track two in order to get more data points.
+![recovery start][recovery_1]
+![recovery mid][recovery_2]
+![recovery almost there!][recovery_3]
 
-To augment the data sat, I also flipped images and angles thinking that this would ... For example, here is an image that has then been flipped:
-
-![alt text][image6]
-![alt text][image7]
-
-Etc ....
 
 After the collection process, I had X number of data points. I then preprocessed this data by ...
 
+Image augmentation described in "Model Architecture and Training Strategy"
 
-I finally randomly shuffled the data set and put Y% of the data into a validation set. 
+I finally randomly shuffled the data set and put 20% of the data into a validation set. 
 
-I used this training data for training the model. The validation set helped determine if the model was over or under fitting. The ideal number of epochs was Z as evidenced by ... I used an adam optimizer so that manually training the learning rate wasn't necessary.
+I used this training data for training the model. The validation set helped determine if the model was over or under fitting. The ideal number of epochs was about 5-6 as the loss was not getting any lower after that. I used an adam optimizer so that manually training the learning rate wasn't necessary.
