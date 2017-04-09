@@ -1,3 +1,5 @@
+### imports ###
+
 import csv
 import cv2
 import numpy as np
@@ -8,6 +10,12 @@ from keras.models import Sequential
 from keras.layers import Flatten, Dense, Lambda, Dropout, Cropping2D
 from keras.layers.convolutional import Conv2D
 from keras.callbacks import EarlyStopping
+
+# image preprocessing / augmentation
+# separate module so the code can be used in drive.py as well
+import ppc
+
+### define some constants ###
 
 # if steering angle is < this value, drop 70% of the data
 min_steering_angle = 0.8
@@ -20,50 +28,10 @@ batch_size = 32
 # how many epochs to train
 num_epochs = 10
 
-# image preprocessing / augmentation
-# separate module to reuse pipeline in drive.py
-import ppc
-
-# lines from the driving log CSV file:
-lines = []
-
-
 #folder = "../windows_sim/record_lap2/"
 folder = "../data/"
 
-skip_one = 0
-
-print("reading data from folder " + folder)
-
-# Read the CSV driving logfiles
-f = open(folder + '/driving_log.csv')
-with f as csvfile:
-  reader = csv.reader(csvfile)
-  for line in reader:
-
-    # skip header line
-    if skip_one == 0:
-      skip_one = 1
-      continue
-
-    # eliminate 70% of steering values too close to 0 in order to reduce bias
-    if random.randrange(10) < 7:
-      if abs(float(line[3])) < min_steering_angle:
-        continue
-
-    lines.append(line)
-f.close()
-
-print("read " + str(len(lines)) + " lines from driving log")
-
-  
-useable = len(lines)
-print ("got " + str(useable) + " useable measurements")
-
-# Sanity check
-if useable == 0:
-  print ("0 useable measurements, giving up")
-  quit()
+### define functions ###
 
 def generator(data):
   while 1:
@@ -150,9 +118,11 @@ def nvidia_model():
   # Normalisation:
   model.add(Lambda(lambda x: x/255.0 - 0.5, input_shape=(65, 320, 3), output_shape=(65, 320, 3)))
   
+  # Convolutional layers:
   model.add(Conv2D(24,5,5,border_mode='valid', activation='relu', subsample=(2,2)))
   model.add(Conv2D(36,5,5,border_mode='valid', activation='relu', subsample=(2,2)))
   model.add(Conv2D(48,5,5,border_mode='valid', activation='relu', subsample=(2,2)))
+  # Dropout layer to prevent overfitting:
   model.add(Dropout(0.3))
   model.add(Conv2D(64,3,3,border_mode='valid', activation='relu', subsample=(1,1)))
   model.add(Conv2D(64,3,3,border_mode='valid', activation='relu', subsample=(1,1)))
@@ -170,23 +140,63 @@ def nvidia_model():
   model.add(Dense(1, activation='tanh'))
   
   return model
-  
 
+### main ###
+### read training data ###
+
+# lines from the driving log CSV file:
+lines = []
+
+skip_one = 0
+
+print("reading data from folder " + folder)
+
+# Read the CSV driving logfiles
+f = open(folder + '/driving_log.csv')
+with f as csvfile:
+  reader = csv.reader(csvfile)
+  for line in reader:
+
+    # skip header line
+    if skip_one == 0:
+      skip_one = 1
+      continue
+
+    # eliminate 70% of steering values too close to 0 in order to reduce bias 
+    if random.randrange(10) < 7:
+      if abs(float(line[3])) < min_steering_angle:
+        continue
+
+    lines.append(line)
+f.close()
+
+print("read " + str(len(lines)) + " lines from driving log")
+
+# Sanity check
+if len(lines) == 0:
+  print ("0 useable measurements, giving up")
+  quit()
+
+### train ###  
+  
+# shuffle data, then split into training set and validation set
 lines = sklearn.utils.shuffle(lines)
 train_samples, validation_samples = train_test_split(lines, test_size=0.2)
 
 print ("got " + str(len(train_samples)) + " training samples")
 print ("got " + str(len(validation_samples)) + " validation samples")
 
+# create the generators for training and validation sample batches
 train_generator = generator(train_samples)
 validation_generator = generator(validation_samples)
 
+# use the nvidia model
 model = nvidia_model()
 
+# use Adam optimizer for learning rate
 model.compile(loss='mse', optimizer='adam')
 
+# run model and save
 model.fit_generator(train_generator, samples_per_epoch = len(train_samples), nb_epoch=num_epochs, \
   validation_data = validation_generator, nb_val_samples = len(validation_samples))
-
-
 model.save('model.h5')
