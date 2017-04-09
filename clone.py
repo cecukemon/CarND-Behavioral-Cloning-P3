@@ -9,31 +9,16 @@ from keras.layers import Flatten, Dense, Lambda, Dropout, Cropping2D
 from keras.layers.convolutional import Conv2D
 from keras.callbacks import EarlyStopping
 
-# TODO
-# - [x] cropping in keras
-# - [x] augment dataset by flipping images / measurements
-# - [x] random brightness
-# - [x] remove only 70% of the center steering
-# - [ ] augment on the fly
-# - [ ] train without dropout layers between the convolutional layers
-# - [ ] try ELU instead of RELU
-# - what else?
-#
-# only train on provided dataset!
-
+# if steering angle is < this value, drop 70% of the data
 min_steering_angle = 0.8
+
+# steering angle adjustment for left / right camera
 steering_angle_adjustment = 0.2
 
 # how many samples per generator batch
 batch_size = 32
 # how many epochs to train
-num_epochs = 100
-
-# these two variables will be set later when we know how many training / validation samples
-steps_per_epoch = 0 
-validation_steps_per_epoch = 0
-
-
+num_epochs = 10
 
 # image preprocessing / augmentation
 # separate module to reuse pipeline in drive.py
@@ -42,34 +27,34 @@ import ppc
 # lines from the driving log CSV file:
 lines = []
 
-#path = "../windows_sim/"
-folders = ["../data/"]
+
+#folder = "../windows_sim/record_lap2/"
+folder = "../data/"
 
 skip_one = 0
 
-for folder in folders:
-  print(folder)
-  
-  # Read the CSV driving logfiles
-  f = open(folder + '/driving_log.csv')
-  with f as csvfile:
-    reader = csv.reader(csvfile)
-    for line in reader:
+print("reading data from folder " + folder)
 
-      # skip header line
-      if skip_one == 0:
-        skip_one = 1
+# Read the CSV driving logfiles
+f = open(folder + '/driving_log.csv')
+with f as csvfile:
+  reader = csv.reader(csvfile)
+  for line in reader:
+
+    # skip header line
+    if skip_one == 0:
+      skip_one = 1
+      continue
+
+    # eliminate 70% of steering values too close to 0 in order to reduce bias
+    if random.randrange(10) < 7:
+      if abs(float(line[3])) < min_steering_angle:
         continue
 
-      # eliminate 70% of steering values too close to 0 in order to reduce bias
-      if random.randrange(10) < 7:
-        if abs(float(line[3])) < min_steering_angle:
-          continue
+    lines.append(line)
+f.close()
 
-      lines.append(line)
-  f.close()
-
-  print("read " + str(len(lines)) + " lines from driving log")
+print("read " + str(len(lines)) + " lines from driving log")
 
   
 useable = len(lines)
@@ -83,22 +68,30 @@ if useable == 0:
 def generator(data):
   while 1:
     for i in range(0, len(data), batch_size):
-      batch_samples = data[offset : offset + batch_size]
+      batch_samples = data[i : i + batch_size]
       images = []
       measurements = []
 
-      for line in lines:
+      for line in batch_samples:
         (image, measurement) = augment_data(line)
         images.append(image)
         measurements.append(measurement)
+      
+      #print("got " + str(len(measurements)) + " measurements in batch")
 
-      X_train = np.array(images)
-      y_train = np.array(measurements)
+      X_batch = np.array(images)
+      y_batch = np.array(measurements)
+      
+      #print (X_batch.shape)
+      #print (y_batch.shape)
 
-      yield(X_train, y_train)
+      yield(X_batch, y_batch)
 
+
+
+      
 def augment_data(line):
-  steering = line[3]
+  steering = float(line[3])
 
   # randomly choose the camera to take the image from
   camera = np.random.choice([0,1,2])
@@ -108,11 +101,16 @@ def augment_data(line):
     steering += steering_angle_adjustment
   elif camera == 2:
     steering -= steering_angle_adjustment
-
+    
   source_path = line[camera]
-  filename = source_path.split('\\')[-1]
+  
+  # adjust file path depending on whether using udacity data or own data capture
+  if "windows_sim" in source_path:
+    filename = "/IMG/" + source_path.split('\\')[-1]
+  else:
+    filename = source_path.replace(' ', '')
 
-  image = cv2.imread(folder + '/IMG/' + filename)
+  image = cv2.imread(folder + filename)
 
   # randomly flip images to reduce left steering bias
   # an alternative would be driving the track backwards, but this way
@@ -147,18 +145,18 @@ def nvidia_model():
 
   # Cropping:
   # remove top 70, bottom 25px, leave left / right as is
-  model.add(Cropping2D(cropping=((70, 25), (0, 0)), input_shape=(320, 160, 3)))
+  model.add(Cropping2D(cropping=((70, 25), (0, 0)), dim_ordering='tf', input_shape=(160, 320, 3)))
   
   # Normalisation:
-  model.add(Lambda(lambda x: x/255.0 - 0.5, input_shape=(160, 320, 3), output_shape=(160, 320, 3)))
+  model.add(Lambda(lambda x: x/255.0 - 0.5, input_shape=(65, 320, 3), output_shape=(65, 320, 3)))
   
   model.add(Conv2D(24,5,5,border_mode='valid', activation='relu', subsample=(2,2)))
   model.add(Conv2D(36,5,5,border_mode='valid', activation='relu', subsample=(2,2)))
   model.add(Conv2D(48,5,5,border_mode='valid', activation='relu', subsample=(2,2)))
-  #model.add(Dropout(0.3))
+  model.add(Dropout(0.3))
   model.add(Conv2D(64,3,3,border_mode='valid', activation='relu', subsample=(1,1)))
   model.add(Conv2D(64,3,3,border_mode='valid', activation='relu', subsample=(1,1)))
-  #model.add(Dropout(0.2))
+  model.add(Dropout(0.2))
   
   # Flattening:
   model.add(Flatten())
@@ -177,26 +175,18 @@ def nvidia_model():
 lines = sklearn.utils.shuffle(lines)
 train_samples, validation_samples = train_test_split(lines, test_size=0.2)
 
+print ("got " + str(len(train_samples)) + " training samples")
+print ("got " + str(len(validation_samples)) + " validation samples")
 
 train_generator = generator(train_samples)
 validation_generator = generator(validation_samples)
 
-
-# It should typically be equal to the number of unique samples if your dataset divided by the batch size.
-steps_per_epoch = len(train_samples) / batch_size
-validation_steps_per_epoch = len(validation_samples) / batch_size
-  
 model = nvidia_model()
 
 model.compile(loss='mse', optimizer='adam')
 
-# EarlyStopping callback - let keras monitor the loss function and stop training the model
-# when it's not improving enough anymore. That way, I can set the epochs to a high
-# value and not worry about it.
-early_stopping = EarlyStopping(monitor='val_loss', patience=2, min_delta=0.002)
-
-model.fit_generator(train_generator, steps_per_epoch, epochs=num_epochs, \
-  callbacks=[early_stopping], validation_data=validation_generator, validation_steps=validation_steps_per_epoch)
+model.fit_generator(train_generator, samples_per_epoch = len(train_samples), nb_epoch=num_epochs, \
+  validation_data = validation_generator, nb_val_samples = len(validation_samples))
 
 
 model.save('model.h5')
