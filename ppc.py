@@ -10,7 +10,7 @@ def crop(image):
 
 # Apply gaussian blur and change image from RGV to YUV color space
 def color(image):
-  image = cv2.GaussianBlur(image, (3,3),0)
+  image = cv2.GaussianBlur(image, (3,3), 0)
   image = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
   return image
 

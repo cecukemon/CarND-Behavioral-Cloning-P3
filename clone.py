@@ -27,9 +27,9 @@ measurements = []
 # recovery - recovering from sideline driving
 # problems - training data for specific problem spots
 
-folders = ["record_lap1", "record_lap2", "record_recovery", "record_problems"]
+#folders = ["record_lap1", "record_lap2", "record_recovery", "record_problems"]
 
-#folders = ["record_lap1"]
+folders = ["data"]
 
 j = 0;
 for folder in folders:
@@ -70,7 +70,7 @@ for folder in folders:
       image = cv2.imread('../windows_sim/' + folder + '/IMG/' + filename)
       
       # Do preprocessing on the image - see code in ppc.py
-      image = ppc.do_ppc(image)
+      #image = ppc.do_ppc(image)
       
       images.append(image)
     j += 1
