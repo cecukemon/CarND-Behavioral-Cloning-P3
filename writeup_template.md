@@ -1,9 +1,5 @@
 #**Behavioral Cloning** 
 
-##Writeup Template
-
-###You can use this file as a template for your writeup if you want to submit it as a markdown file, but feel free to use some other method and submit a pdf if you prefer.
-
 ---
 
 **Behavioral Cloning Project**
@@ -27,7 +23,6 @@ The goals / steps of this project are the following:
 [image7]: ./examples/placeholder_small.png "Flipped Image"
 
 ## Rubric Points
-###Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/432/view) individually and describe how I addressed each point in my implementation.  
 
 ---
 ###Files Submitted & Code Quality
@@ -54,51 +49,60 @@ The model.py file contains the code for training and saving the convolution neur
 
 ####1. An appropriate model architecture has been employed
 
-My model consists of a convolution neural network with 3x3 filter sizes and depths between 32 and 128 (model.py lines 18-24) 
+My model is based on the architecture described in the following paper by NVIDIA: https://images.nvidia.com/content/tegra/automotive/images/2016/solutions/pdf/end-to-end-dl-using-px.pdf
 
-The model includes RELU layers to introduce nonlinearity (code line 20), and the data is normalized in the model using a Keras lambda layer (code line 18). 
+It is a convolution neural network.
+
+The network starts by cropping the images - this would be part of the augmentation process, but I wanted to profit from GPU acceleration for this step, so I'm cropping in Keras and not with OpenCV.
+
+Then, the network consisting of 5 convolutional layers with filter sizes 3x3 and 5x5; and depth between 24 and 64 (model.py lines 122-129). I added two dropout layers beetwen the convolutional layers to prevent overfitting.
+
+The model includes RELU layers to introduce nonlinearity (code line 135-139) with another dropout layer, and the data is normalized in the model using a Keras lambda layer (code line 119). 
 
 ####2. Attempts to reduce overfitting in the model
 
-The model contains dropout layers in order to reduce overfitting (model.py lines 21). 
+The model contains dropout layers in order to reduce overfitting (model.py lines 126,129,137). 
 
-The model was trained and validated on different data sets to ensure that the model was not overfitting (code line 10-16). The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track.
+The model was trained and validated both on the Udacity data set and on data sets I collected myself. I had the most success with the Udacity data set, and the submitted model.h5 was trained solely on the Udacity data set. The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track.
 
 ####3. Model parameter tuning
 
-The model used an adam optimizer, so the learning rate was not tuned manually (model.py line 25).
+The model used an adam optimizer, so the learning rate was not tuned manually (model.py line 197).
 
 ####4. Appropriate training data
 
-Training data was chosen to keep the vehicle driving on the road. I used a combination of center lane driving, recovering from the left and right sides of the road ... 
+For the final training, I used the Udacity training data.
 
-For details about how I created the training data, see the next section. 
+During development of the model, I used my own training data as well. I collected multiple laps driving in the middle of the lane, and one lap consisting only of "recovery" maneuvers, with the car driving from the road border back to the lane center. I also included a few recordings of specific problem points.
+
+While it was very interesting seeing the trained model behavior change depending on the data used, in the end I used the Udacity data set because it gave me consistent and solid results.
 
 ###Model Architecture and Training Strategy
 
 ####1. Solution Design Approach
 
-The overall strategy for deriving a model architecture was to ...
+I used the model described in the Nvidia paper: https://images.nvidia.com/content/tegra/automotive/images/2016/solutions/pdf/end-to-end-dl-using-px.pdf
 
-My first step was to use a convolution neural network model similar to the ... I thought this model might be appropriate because ...
+As it solved a similar problem as what I was trying to, I thought it would be a good fit.
 
-In order to gauge how well the model was working, I split my image and steering angle data into a training and validation set. I found that my first model had a low mean squared error on the training set but a high mean squared error on the validation set. This implied that the model was overfitting. 
+My first step was to implement the convolutional neural network as described on page 5 of the paper, adding dropout layers to avoid overfitting and training on my own data. Since the data had strong peak of steering measurements around 0 degrees, I removed 70% of the steering measurements beetween -0.8 and 0.8 degrees. I also tried increasing the training data size by flipping the images, and by using all camera perspectives in the data set (left, center, right), correcting the steering angle for left and right.
 
-To combat the overfitting, I modified the model so that ...
+Since the driving behavior wasn't satisfactory, I added augmentation on the data, adding some Gaussian blur and changing the color space from RGB to YUV. I also called the augmentation code from drive.py
 
-Then I ... 
+These changes improved the driving behavior some, but at this point I still had problems with the car getting off-track pretty quickly.
 
-The final step was to run the simulator to see how well the car was driving around track one. There were a few spots where the vehicle fell off the track... to improve the driving behavior in these cases, I ....
+I then rewrote the code to use generators for feeding the model, with a batch size of 32 images, and doing the augmentation on random images per batch. This ensures better training, as the model gets a more random set of images in every epoch.
+
+For augmentation, I did the following:
+- gaussian blur
+- 
+
 
 At the end of the process, the vehicle is able to drive autonomously around the track without leaving the road.
 
 ####2. Final Model Architecture
 
-The final model architecture (model.py lines 18-24) consisted of a convolution neural network with the following layers and layer sizes ...
-
-Here is a visualization of the architecture (note: visualizing the architecture is optional according to the project rubric)
-
-![alt text][image1]
+As described in the first part of "Model Architecture and Training Strategy"
 
 ####3. Creation of the Training Set & Training Process
 
