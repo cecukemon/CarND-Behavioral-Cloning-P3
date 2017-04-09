@@ -16,7 +16,7 @@ The goals / steps of this project are the following:
 
 [mid]: ./examples/mid.jpg
 [recovery_1]: ./examples/recovery_1.jpg
-[recovery_2]: ./examples/recovery_2.jpg
+[recovery_2]: ./examples/reocovery_2.jpg
 [recovery_3]: ./examples/recovery_3.jpg
 
 ## Rubric Points
